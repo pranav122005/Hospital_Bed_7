@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OPD Receptionist | Hospital Queue</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --blue: #1e40af;
+      --blue-light: #dbeafe;
+      --blue-mid: #3b82f6;
+      --green: #059669;
+      --green-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --bg: #f0f4f8;
+      --white: #fff;
+      --border: #e5e7eb;
+      --text: #1a202c;
+      --muted: #6b7280;
+      --shadow: 0 2px 12px rgba(0, 0, 0, .08);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* NAV */
+    nav {
+      background: var(--blue);
+      color: #fff;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+    }
+
+    nav h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    nav .links a {
+      color: rgba(255, 255, 255, .8);
+      text-decoration: none;
+      margin-left: 18px;
+      font-size: .88rem;
+      font-weight: 500;
+      transition: color .2s;
+    }
+
+    nav .links a:hover,
+    nav .links a.active {
+      color: #fff;
+    }
+
+    /* LAYOUT */
+    .container {
+      max-width: 1260px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat .num {
+      font-size: 2rem;
+      font-weight: 800;
+    }
+
+    .stat .lbl {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .stat.total .num {
+      color: var(--blue);
+    }
+
+    .stat.waiting .num {
+      color: var(--amber);
+    }
+
+    .stat.busy .num {
+      color: var(--green);
+    }
+
+    /* LCD WIDGET */
+    .lcd-widget {
+      background: #0d1117;
+      border-radius: 14px;
+      padding: 20px 26px;
+      margin-bottom: 22px;
+      font-family: 'Courier New', monospace;
+      color: #4ade80;
+      border: 2px solid #22c55e;
+      box-shadow: 0 0 24px rgba(74, 222, 128, .18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .lcd-left {
+      flex: 1;
+    }
+
+    .lcd-title {
+      font-size: .75rem;
+      color: #6b7280;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 10px;
+    }
+
+    .lcd-screen {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      line-height: 2;
+    }
+
+    .lcd-right {
+      text-align: right;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .lcd-calling {
+      background: rgba(74, 222, 128, .12);
+      border: 1px solid #22c55e;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: .85rem;
+      font-family: 'Inter', sans-serif;
+      display: none;
+    }
+
+    .lcd-calling.active {
+      display: block;
+      color: #4ade80;
+      animation: blink 1.2s ease infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .5;
+      }
+    }
+
+    /* MOVING AVERAGE WIDGET */
+    .ma-widget {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 22px 26px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+      border-left: 5px solid var(--purple);
+    }
+
+    .ma-widget-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--purple);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ma-doctors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .ma-doctor-card {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .ma-doctor-name {
+      font-weight: 700;
+      font-size: .92rem;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .ma-doctor-spec {
+      font-size: .77rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .ma-avg-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .ma-avg-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--purple);
+    }
+
+    .ma-avg-label {
+      font-size: .75rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .ma-default-badge {
+      background: var(--amber-light);
+      color: var(--amber);
+      font-size: .72rem;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    .ma-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 50px;
+      margin-bottom: 8px;
+    }
+
+    .ma-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      flex: 1;
+    }
+
+    .ma-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: var(--purple);
+      opacity: 0.85;
+      min-height: 4px;
+      transition: height .4s ease;
+    }
+
+    .ma-bar-label {
+      font-size: .65rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .ma-bar-val {
+      font-size: .65rem;
+      color: var(--purple);
+      font-weight: 700;
+      margin-bottom: 1px;
+    }
+
+    .ma-window-note {
+      font-size: .73rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .ma-formula {
+      background: var(--purple-light);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--purple);
+      margin-top: 8px;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* TWO-COLUMN GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media(max-width:820px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* FORM */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: .93rem;
+      font-family: inherit;
+      transition: border .2s;
+      background: #fafafa;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--blue-mid);
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 62px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      padding: 12px 22px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: .93rem;
+      font-weight: 700;
+      font-family: inherit;
+      transition: all .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover {
+      background: #1d3a9e;
+      transform: translateY(-1px);
+    }
+
+    /* TOKEN RESULT */
+    #token-result {
+      display: none;
+      margin-top: 16px;
+      background: var(--blue-light);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      border: 1.5px solid #93c5fd;
+    }
+
+    .token-num {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--blue);
+      line-height: 1;
+    }
+
+    .token-meta {
+      font-size: .83rem;
+      color: #374151;
+      margin-top: 5px;
+    }
+
+    /* QUEUE TABLE */
+    .queue-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .queue-header select {
+      width: auto;
+      padding: 7px 12px;
+      font-size: .85rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .86rem;
+    }
+
+    thead th {
+      background: var(--blue-light);
+      color: var(--blue);
+      padding: 11px 12px;
+      text-align: left;
+      font-weight: 700;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    thead th:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+
+    thead th:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: middle;
+    }
+
+    tbody tr:hover td {
+      background: #f9fafb;
+    }
+
+    /* BADGES */
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .badge-waiting {
+      background: var(--amber-light);
+      color: #92400e;
+    }
+
+    .badge-consulting {
+      background: var(--green-light);
+      color: #065f46;
+    }
+
+    /* DOCTOR CALLING INDICATOR in queue */
+    .calling-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--green-light);
+      color: var(--green);
+      font-size: .72rem;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 3px 10px;
+      border: 1px solid #6ee7b7;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.5);
+        opacity: .6;
+      }
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 22px;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      font-size: .9rem;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .2);
+      animation: fadeIn .3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <h1>🏥 OPD Queue Management</h1>
+    <div class="links">
+      <a href="/" class="active">Receptionist</a>
+      <a href="/doctor">Doctor</a>
+      <a href="/admin">Admin</a>
+      <a href="/patient">Patient</a>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat total">
+        <div class="num" id="stat-total">—</div>
+        <div class="lbl">Total Patients</div>
+      </div>
+      <div class="stat waiting">
+        <div class="num" id="stat-waiting">—</div>
+        <div class="lbl">Waiting</div>
+      </div>
+      <div class="stat busy">
+        <div class="num" id="stat-consulting">—</div>
+        <div class="lbl">In Consultation</div>
+      </div>
+    </div>
+
+    <!-- LCD DISPLAY WIDGET -->
+    <div class="lcd-widget">
+      <div class="lcd-left">
+        <div class="lcd-title">🖥️ Now Serving — LCD Display Mirror (ESP32)</div>
+        <div class="lcd-screen">
+          NOW: <span id="lcd-token">----</span><br>
+          Wait: <span id="lcd-wait">-- min</span>
+        </div>
+      </div>
+      <div class="lcd-right">
+        <div class="lcd-calling" id="lcd-calling">
+          📢 Doctor is calling<br><span id="lcd-calling-name" style="font-size:1.1em;font-weight:800">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📊 MOVING AVERAGE LIVE WIDGET -->
+    <div class="ma-widget">
+      <div class="ma-widget-title">
+        📈 Live Moving Average — Real-Time Wait Prediction Engine
+        <span style="font-size:.75rem;font-weight:500;color:var(--muted);margin-left:auto">Based on last 5 completed
+          consultations · Updates every 10s</span>
+      </div>
+      <div class="ma-doctors-grid" id="ma-grid">
+        <div style="color:var(--muted);font-size:.9rem">Loading moving averages…</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- REGISTER FORM -->
+      <div class="card">
+        <div class="card-title">📋 Register Patient — Issue Token</div>
+        <div class="form-group">
+          <label>Patient Name *</label>
+          <input type="text" id="p-name" placeholder="Full name" />
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="p-age" placeholder="Age (optional)" min="1" max="120" />
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="p-phone" placeholder="e.g. 9876543210 (optional)" />
+        </div>
+        <div class="form-group">
+          <label>Problem / Chief Complaint</label>
+          <textarea id="p-problem" placeholder="Brief description (optional)"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Select Doctor *</label>
+          <select id="p-doctor">
+            <option value="">— Loading doctors... —</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="registerPatient()">🎫 Generate Token</button>
+
+        <div id="token-result">
+          <div style="font-size:.78rem;color:#374151;margin-bottom:5px">Token Number Issued</div>
+          <div class="token-num" id="token-display">—</div>
+          <div class="token-meta" id="token-doctor"></div>
+          <div class="token-meta" id="token-wait"></div>
+        </div>
+      </div>
+
+      <!-- LIVE QUEUE TABLE -->
+      <div class="card">
+        <div class="queue-header">
+          <div class="card-title" style="margin-bottom:0">📊 Live OPD Queue</div>
+          <select id="filter-doctor" onchange="loadQueue()">
+            <option value="">All Doctors</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Est. Wait</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="queue-body">
+            <tr>
+              <td colspan="5" style="text-align:center;color:#9ca3af;padding:24px">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const API = "";
+
+    // ── Stats ────────────────────────────────────────────────────
+    async function loadStats() {
+      const res = await fetch(`${API}/api/admin/stats`).catch(() => null);
+      if (!res) return;
+      const json = await res.json();
+      if (!json.success) return;
+      const d = json.data;
+      document.getElementById("stat-total").textContent = d.total;
+      document.getElementById("stat-waiting").textContent = d.waiting;
+      document.getElementById("stat-consulting").textContent = d.consulting;
+    }
+
+    // ── LCD Mirror ───────────────────────────────────────────────
+    async function loadLCD() {
+      const doctorId = document.getElementById("filter-doctor").value || 1;
+      const res = await fetch(`${API}/api/display/current?doctor_id=${doctorId}`).catch(() => null);
+      if (!res) return;
+      const json = await res.json();
+      if (!json.success || !json.data) return;
+      const d = json.data;
+
+      document.getElementById("lcd-token").textContent = d.current_token
+        ? `#${String(d.current_token).padStart(3, "0")}`
+        : "----";
+      document.getElementById("lcd-wait").textContent = `~${d.estimated_wait_min} min`;
+
+      // "Doctor is calling" indicator
+      const callingEl = document.getElementById("lcd-calling");
+      const callingName = document.getElementById("lcd-calling-name");
+      if (d.status === "consulting" && d.patient_name) {
+        callingName.textContent = d.patient_name;
+        callingEl.classList.add("active");
+      } else {
+        callingEl.classList.remove("active");
+      }
+    }
+
+    // ── Load doctors for dropdowns ───────────────────────────────
+    async function loadDoctors() {
+      const res = await fetch(`${API}/api/receptionist/doctors`).catch(() => null);
+      if (!res) return;
+      const json = await res.json();
+      const sel1 = document.getElementById("p-doctor");
+      const sel2 = document.getElementById("filter-doctor");
+      sel1.innerHTML = '<option value="">— Select Doctor —</option>';
+      while (sel2.options.length > 1) sel2.remove(1);
+
+      (json.data || []).forEach(d => {
+        const callingText = d.current_patient
+          ? ` 📢 Calling #${d.current_patient.token_number}`
+          : "";
+        const o1 = document.createElement("option");
+        o1.value = d.id;
+        o1.textContent = `${d.name} — ${d.specialization} (${d.waiting_count} waiting)${callingText}`;
+        sel1.appendChild(o1);
+        const o2 = document.createElement("option");
+        o2.value = d.id;
+        o2.textContent = d.name;
+        sel2.appendChild(o2);
+      });
+    }
+
+    // ── Live Queue ───────────────────────────────────────────────
+    async function loadQueue() {
+      const doctorId = document.getElementById("filter-doctor").value;
+      const url = doctorId
+        ? `${API}/api/receptionist/queue?doctor_id=${doctorId}`
+        : `${API}/api/receptionist/queue`;
+      const res = await fetch(url).catch(() => null);
+      if (!res) return;
+      const json = await res.json();
+      const tbody = document.getElementById("queue-body");
+
+      if (!json.data || json.data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:24px">Queue is empty</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = json.data.map(p => {
+        const statusBadge = p.status === "consulting"
+          ? `<span class="calling-indicator"><span class="pulse-dot"></span>IN CONSULT</span>`
+          : `<span class="badge badge-waiting">Waiting</span>`;
+
+        const doctorCell = p.status === "consulting"
+          ? `${p.doctor_name || '—'}<br><small style="color:var(--green);font-weight:600">📢 Calling</small>`
+          : (p.doctor_name || '—');
+
+        const wait = p.wait_info;
+        const waitText = p.status === "consulting"
+          ? `<span style="color:var(--green);font-weight:700">Now ✔</span>`
+          : (wait ? `~${wait.estimated_wait_minutes} min<br><small style="color:var(--muted)">${wait.avg_consultation_minutes} min/pt</small>` : '—');
+
+        return `
+      <tr>
+        <td><strong>#${p.token_number}</strong></td>
+        <td>${p.name}<br><small style="color:#9ca3af">${p.problem || ''}</small></td>
+        <td>${doctorCell}</td>
+        <td>${waitText}</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+      }).join("");
+    }
+
+    // ── 📈 Moving Average Widget ──────────────────────────────────
+    async function loadMovingAverages() {
+      const res = await fetch(`${API}/api/receptionist/moving_average`).catch(() => null);
+      if (!res) return;
+      const json = await res.json();
+      const grid = document.getElementById("ma-grid");
+      if (!json.data || json.data.length === 0) { grid.innerHTML = ""; return; }
+
+      const maxDuration = Math.max(...json.data.flatMap(d => d.last_patients.map(p => p.duration)), 1);
+
+      grid.innerHTML = json.data.map(doc => {
+        const avg = doc.avg_minutes;
+        const patients = doc.last_patients;
+        const windowSize = doc.window_size;
+
+        // Build mini bar chart of last 5 durations
+        const barsHtml = patients.length > 0
+          ? patients.map((pt, i) => {
+            const pct = Math.max((pt.duration / maxDuration) * 100, 8);
+            return `
+            <div class="ma-bar-wrap" title="Token #${pt.token}: ${pt.duration} min">
+              <div class="ma-bar-val">${pt.duration}m</div>
+              <div class="ma-bar" style="height:${pct}%"></div>
+              <div class="ma-bar-label">#${pt.token}</div>
+            </div>`;
+          }).join("")
+          : `<div style="color:var(--muted);font-size:.8rem;padding:8px 0;font-style:italic">No consultations yet — using default</div>`;
+
+        const defaultBadge = doc.using_default
+          ? `<span class="ma-default-badge">Using Default</span>`
+          : `<span style="background:var(--green-light);color:var(--green);font-size:.72rem;font-weight:700;border-radius:20px;padding:2px 10px">Live Data ✓</span>`;
+
+        return `
+      <div class="ma-doctor-card">
+        <div class="ma-doctor-name">${doc.doctor_name}</div>
+        <div class="ma-doctor-spec">${doc.specialization}</div>
+        <div class="ma-avg-row">
+          <div>
+            <div class="ma-avg-value">${avg} <span style="font-size:1rem">min</span></div>
+            <div class="ma-avg-label">Avg Consult Time</div>
+          </div>
+          ${defaultBadge}
+        </div>
+        <div class="ma-bars" style="position:relative">${barsHtml}</div>
+        <div class="ma-window-note">
+          📊 Based on last <strong>${windowSize}</strong> of 5 consultations
+          ${windowSize < 5 && windowSize > 0 ? `<span style="color:var(--amber)"> (accumulating...)</span>` : ''}
+        </div>
+        <div class="ma-formula">
+          🧮 Est. Wait = ${avg} × patients_ahead
+        </div>
+      </div>`;
+      }).join("");
+    }
+
+    // ── Register Patient ─────────────────────────────────────────
+    async function registerPatient() {
+      const name = document.getElementById("p-name").value.trim();
+      const age = document.getElementById("p-age").value;
+      const phone = document.getElementById("p-phone").value.trim();
+      const problem = document.getElementById("p-problem").value.trim();
+      const doctor_id = document.getElementById("p-doctor").value;
+
+      if (!name) { showToast("⚠️ Patient name is required", "error"); return; }
+      if (!doctor_id) { showToast("⚠️ Please select a doctor", "error"); return; }
+
+      const res = await fetch(`${API}/api/receptionist/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          age: age ? parseInt(age) : null,
+          phone_number: phone,
+          problem,
+          doctor_id: parseInt(doctor_id)
+        })
+      }).catch(() => null);
+
+      if (!res) { showToast("❌ Network error", "error"); return; }
+      const json = await res.json();
+
+      if (json.success) {
+        const d = json.data;
+        document.getElementById("token-display").textContent = `#${d.token_number}`;
+        document.getElementById("token-doctor").textContent = `Dr. ${d.doctor_name} — ${d.specialization}`;
+        document.getElementById("token-wait").textContent =
+          `Est. wait: ~${d.wait_info?.estimated_wait_minutes ?? '—'} min`;
+        document.getElementById("token-result").style.display = "block";
+        // Clear form
+        ["p-name", "p-age", "p-phone", "p-problem"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("p-doctor").value = "";
+        showToast(`✅ Token #${d.token_number} issued!`);
+        loadDoctors(); loadQueue(); loadLCD(); loadStats(); loadMovingAverages();
+      } else {
+        showToast(`❌ ${json.message}`, "error");
+      }
+    }
+
+    // ── Toast ────────────────────────────────────────────────────
+    function showToast(msg, type = "success") {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.background = type === "error" ? "#dc2626" : "#059669";
+      t.style.display = "block";
+      setTimeout(() => t.style.display = "none", 3500);
+    }
+
+    // ── Init & Poll ──────────────────────────────────────────────
+    loadDoctors(); loadQueue(); loadStats(); loadLCD(); loadMovingAverages();
+    setInterval(() => { loadQueue(); loadDoctors(); loadStats(); loadLCD(); loadMovingAverages(); }, 10000);
+  </script>
+</body>
+
+</html>

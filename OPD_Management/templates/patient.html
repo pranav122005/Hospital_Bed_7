@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Portal | OPD Queue</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    nav {
+      background: rgba(0, 0, 0, .25);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    nav h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    nav .links a {
+      color: rgba(255, 255, 255, .8);
+      text-decoration: none;
+      margin-left: 18px;
+      font-size: .88rem;
+      transition: color .2s;
+    }
+
+    nav .links a:hover,
+    nav .links a.active {
+      color: #fff;
+    }
+
+    .container {
+      max-width: 580px;
+      margin: 36px auto;
+      padding: 0 20px 40px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: .92rem;
+      font-weight: 700;
+      font-family: inherit;
+      transition: all .2s;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: #667eea;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, .18);
+    }
+
+    .tab:not(.active) {
+      background: rgba(255, 255, 255, .2);
+      color: #fff;
+    }
+
+    .tab:not(.active):hover {
+      background: rgba(255, 255, 255, .3);
+    }
+
+    /* PANELS */
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    /* GLASS CARD */
+    .card {
+      background: #fff;
+      border-radius: 22px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #1a202c;
+    }
+
+    .subtitle {
+      font-size: .9rem;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+
+    /* FORM */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: .78rem;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: .96rem;
+      font-family: inherit;
+      transition: border .2s;
+      background: #fafafa;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: #fff;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row .form-group {
+      flex: 1;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      transition: all .25s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, .5);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 10px 20px;
+      font-size: .88rem;
+      border-radius: 10px;
+      background: #667eea;
+      margin-top: 12px;
+    }
+
+    /* ── BOOKING RESULT ── */
+    #booking-result {
+      display: none;
+      margin-top: 22px;
+    }
+
+    .token-hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 18px;
+      padding: 28px;
+      text-align: center;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .token-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, .04) 10px, rgba(255, 255, 255, .04) 20px);
+    }
+
+    .token-hero-label {
+      font-size: .78rem;
+      color: rgba(255, 255, 255, .75);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    .token-hero-num {
+      font-size: 5rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      margin: 4px 0;
+    }
+
+    .token-hero-name {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, .9);
+      margin-top: 4px;
+    }
+
+    .token-hero-doc {
+      font-size: .85rem;
+      color: rgba(255, 255, 255, .75);
+      margin-top: 4px;
+    }
+
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .stat-card {
+      border-radius: 14px;
+      padding: 18px 16px;
+      text-align: center;
+    }
+
+    .stat-card.ahead {
+      background: #fffbeb;
+      border: 1.5px solid #fbbf24;
+    }
+
+    .stat-card.wait {
+      background: #ede9fe;
+      border: 1.5px solid #c4b5fd;
+    }
+
+    .stat-num {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-card.ahead .stat-num {
+      color: #d97706;
+    }
+
+    .stat-card.wait .stat-num {
+      color: #7c3aed;
+    }
+
+    .stat-lbl {
+      font-size: .76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .stat-card.ahead .stat-lbl {
+      color: #92400e;
+    }
+
+    .stat-card.wait .stat-lbl {
+      color: #5b21b6;
+    }
+
+    .stat-sub {
+      font-size: .7rem;
+      opacity: .7;
+      margin-top: 3px;
+    }
+
+    /* INFO BOX */
+    .info-box {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: .88rem;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-lbl {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .info-val {
+      font-weight: 700;
+      color: #1a202c;
+    }
+
+    .s-waiting {
+      color: #d97706;
+      font-weight: 700;
+    }
+
+    .s-consulting {
+      color: #2563eb;
+      font-weight: 700;
+    }
+
+    .s-completed {
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* ── STATUS CHECK PANEL ── */
+    .check-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .check-row select,
+    .check-row input {
+      flex: 1;
+      padding: 12px 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: .96rem;
+      font-family: inherit;
+      transition: border .2s;
+      background: #fafafa;
+    }
+
+    .check-row select:focus,
+    .check-row input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: #fff;
+    }
+
+    /* TOKEN BADGE (status check view) */
+    .token-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 22px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .token-label {
+      font-size: .78rem;
+      color: rgba(255, 255, 255, .8);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .token-num {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .token-name {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, .9);
+      margin-top: 6px;
+    }
+
+    #check-result {
+      display: none;
+      margin-top: 20px;
+    }
+
+    /* WAIT BOX */
+    .wait-box {
+      background: #fffbeb;
+      border: 1.5px solid #fbbf24;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .wait-lbl {
+      font-size: .82rem;
+      color: #92400e;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+
+    .wait-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #d97706;
+    }
+
+    .wait-note {
+      font-size: .82rem;
+      color: #92400e;
+      margin-top: 6px;
+    }
+
+    /* ALERT */
+    #alert-banner {
+      display: none;
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 14px;
+      color: #fff;
+      text-align: center;
+    }
+
+    #alert-banner .alert-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    #alert-banner h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    #alert-banner p {
+      font-size: .88rem;
+      opacity: .9;
+    }
+
+    /* HOSPITAL TABLE */
+    #hospitals-section {
+      display: none;
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 14px;
+      border: 1.5px solid #fee2e2;
+    }
+
+    #hospitals-section h4 {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #dc2626;
+      margin-bottom: 14px;
+    }
+
+    .hosp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .87rem;
+    }
+
+    .hosp-table th {
+      background: #fef2f2;
+      color: #dc2626;
+      padding: 9px 12px;
+      text-align: left;
+      font-weight: 700;
+      font-size: .78rem;
+      text-transform: uppercase;
+    }
+
+    .hosp-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .hosp-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .best-choice {
+      background: #fef2f2;
+    }
+
+    .best-badge {
+      background: #dc2626;
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-left: 6px;
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 22px;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      font-size: .9rem;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .2);
+    }
+
+    /* LIVE PULSE on stats */
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+      margin-left: 6px;
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.5);
+        opacity: .6;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <h1>🏥 OPD Queue System</h1>
+    <div class="links">
+      <a href="/">Receptionist</a>
+      <a href="/doctor">Doctor</a>
+      <a href="/admin">Admin</a>
+      <a href="/patient" class="active">Patient</a>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('book')">📅 Book Appointment</button>
+      <button class="tab" onclick="switchTab('status')">🔍 Check Status</button>
+    </div>
+
+    <!-- ════════════ BOOK APPOINTMENT PANEL ════════════ -->
+    <div id="panel-book" class="panel active">
+      <div class="card">
+        <h2>📅 Book an Appointment</h2>
+        <p class="subtitle">Fill in your details and select a doctor to get your token instantly.</p>
+
+        <div class="form-group">
+          <label class="form-label">Your Name *</label>
+          <input class="form-input" type="text" id="b-name" placeholder="Full name" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Age</label>
+            <input class="form-input" type="number" id="b-age" placeholder="Age" min="1" max="120" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input class="form-input" type="tel" id="b-phone" placeholder="e.g. 9876543210" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Chief Complaint (optional)</label>
+          <input class="form-input" type="text" id="b-problem" placeholder="e.g. Fever, headache..." />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Doctor *</label>
+          <select class="form-input" id="b-doctor">
+            <option value="">— Loading doctors... —</option>
+          </select>
+        </div>
+
+        <button class="btn" onclick="bookAppointment()">🎫 Confirm Booking &amp; Get Token</button>
+
+        <!-- ── BOOKING RESULT ── -->
+        <div id="booking-result">
+
+          <!-- Big token hero -->
+          <div class="token-hero">
+            <div class="token-hero-label">Your Token Number</div>
+            <div class="token-hero-num" id="br-token">—</div>
+            <div class="token-hero-name" id="br-name">—</div>
+            <div class="token-hero-doc" id="br-doc">—</div>
+          </div>
+
+          <!-- Key stats: patients ahead + wait time -->
+          <div class="stats-grid">
+            <div class="stat-card ahead">
+              <div class="stat-num" id="br-ahead">—</div>
+              <div class="stat-lbl">Patients Ahead</div>
+              <div class="stat-sub">before you</div>
+            </div>
+            <div class="stat-card wait">
+              <div class="stat-num" id="br-wait">—</div>
+              <div class="stat-lbl">Est. Wait</div>
+              <div class="stat-sub" id="br-wait-sub">minutes</div>
+            </div>
+          </div>
+
+          <!-- Extra details -->
+          <div class="info-box">
+            <div class="info-row">
+              <span class="info-lbl">Doctor</span>
+              <span class="info-val" id="br-doctor-name">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Specialization</span>
+              <span class="info-val" id="br-spec">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Phone</span>
+              <span class="info-val" id="br-phone">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Status</span>
+              <span class="info-val s-waiting">⏳ Waiting</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Avg Consultation</span>
+              <span class="info-val" id="br-avg">—</span>
+            </div>
+          </div>
+
+          <p style="font-size:.8rem;color:#6b7280;text-align:center">📋 Save your token number. Use <strong>Check
+              Status</strong> tab to track your position live.</p>
+          <button class="btn btn-sm" onclick="switchToStatusCheck()">🔍 Track My Position Live</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ CHECK STATUS PANEL ════════════ -->
+    <div id="panel-status" class="panel">
+      <div class="card">
+        <h2>🔍 Check Your Status</h2>
+        <p class="subtitle">Enter your token number to see your live position and estimated wait.</p>
+
+        <div class="check-row">
+          <select id="doc-select">
+            <option value="">— Select Doctor —</option>
+          </select>
+        </div>
+        <div class="check-row">
+          <input type="number" id="token-input" placeholder="Token Number" min="1" />
+          <button class="btn" style="width:auto;padding:12px 20px;border-radius:12px;font-size:.95rem"
+            onclick="checkToken()">Check</button>
+        </div>
+
+        <!-- CHECK RESULT -->
+        <div id="check-result">
+
+          <div class="token-badge">
+            <div class="token-label">Your Token</div>
+            <div class="token-num" id="r-token">—</div>
+            <div class="token-name" id="r-name">—</div>
+          </div>
+
+          <!-- Live stats grid -->
+          <div class="stats-grid" style="margin-bottom:14px">
+            <div class="stat-card ahead">
+              <div class="stat-num" id="r-ahead-num">—</div>
+              <div class="stat-lbl">Patients Ahead <span class="live-dot"></span></div>
+              <div class="stat-sub">position #<span id="r-pos-num">—</span></div>
+            </div>
+            <div class="stat-card wait">
+              <div class="stat-num" id="r-wait-num">—</div>
+              <div class="stat-lbl">Est. Wait <span class="live-dot"></span></div>
+              <div class="stat-sub" id="r-wait-sub">minutes</div>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="info-row">
+              <span class="info-lbl">Doctor</span>
+              <span class="info-val" id="r-doctor">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Specialization</span>
+              <span class="info-val" id="r-spec">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Problem</span>
+              <span class="info-val" id="r-problem">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Status</span>
+              <span id="r-status">—</span>
+            </div>
+          </div>
+
+          <!-- ALERT BANNER -->
+          <div id="alert-banner">
+            <div class="alert-icon">🚨</div>
+            <h3>Waiting Time Exceeds 2 Hours!</h3>
+            <p>We recommend visiting an alternative hospital for faster care.</p>
+          </div>
+
+          <!-- HOSPITAL RECOMMENDATIONS -->
+          <div id="hospitals-section">
+            <h4>🏥 Recommended Alternative Hospitals</h4>
+            <table class="hosp-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Hospital</th>
+                  <th>Location</th>
+                  <th>Avg Wait</th>
+                </tr>
+              </thead>
+              <tbody id="hosp-body"></tbody>
+            </table>
+          </div>
+
+        </div><!-- end #check-result -->
+      </div>
+    </div><!-- end panel-status -->
+
+  </div><!-- end container -->
+
+  <div id="toast"></div>
+
+  <script>
+    const API = "";
+    let bookedDoctorId = null;
+    let bookedTokenNum = null;
+
+    // ── Tab Switcher ──────────────────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll(".tab").forEach((t, i) => {
+        const panels = ["book", "status"];
+        t.classList.toggle("active", panels[i] === tab);
+      });
+      document.getElementById("panel-book").classList.toggle("active", tab === "book");
+      document.getElementById("panel-status").classList.toggle("active", tab === "status");
+    }
+
+    function switchToStatusCheck() {
+      if (bookedDoctorId && bookedTokenNum) {
+        // Pre-fill the status check form
+        populateDoctorDropdown("doc-select", bookedDoctorId);
+        document.getElementById("token-input").value = bookedTokenNum;
+      }
+      switchTab("status");
+      if (bookedDoctorId && bookedTokenNum) checkToken();
+    }
+
+    // ── Load doctors into a named select ──────────────────────────
+    let doctorCache = [];
+    async function loadDoctors() {
+      const res = await fetch(`${API}/api/patient/doctors`).catch(() => null);
+      if (!res) return;
+      const json = await res.json();
+      doctorCache = json.data || [];
+
+      populateDoctorDropdown("b-doctor");
+      populateDoctorDropdown("doc-select");
+    }
+
+    function populateDoctorDropdown(selectId, preselectId = null) {
+      const sel = document.getElementById(selectId);
+      const isBook = selectId === "b-doctor";
+      sel.innerHTML = isBook
+        ? '<option value="">— Select Doctor —</option>'
+        : '<option value="">— Select Doctor —</option>';
+      doctorCache.forEach(d => {
+        const o = document.createElement("option");
+        o.value = d.id;
+        o.textContent = `${d.name} — ${d.specialization}`;
+        if (preselectId && d.id == preselectId) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+
+    // ── Book Appointment ──────────────────────────────────────────
+    async function bookAppointment() {
+      const name = document.getElementById("b-name").value.trim();
+      const age = document.getElementById("b-age").value;
+      const phone = document.getElementById("b-phone").value.trim();
+      const problem = document.getElementById("b-problem").value.trim();
+      const doctor_id = document.getElementById("b-doctor").value;
+
+      if (!name) { showToast("⚠️ Please enter your name", "error"); return; }
+      if (!doctor_id) { showToast("⚠️ Please select a doctor", "error"); return; }
+
+      const res = await fetch(`${API}/api/patient/book`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, age: age ? parseInt(age) : null, phone_number: phone, problem, doctor_id: parseInt(doctor_id) })
+      }).catch(() => null);
+
+      if (!res) { showToast("❌ Network error", "error"); return; }
+      const json = await res.json();
+
+      if (!json.success) { showToast(`❌ ${json.message}`, "error"); return; }
+
+      const d = json.data;
+      const w = d.wait_info;
+
+      // Save for cross-tab navigation
+      bookedDoctorId = d.doctor_id;
+      bookedTokenNum = d.token_number;
+
+      // Fill result card
+      document.getElementById("br-token").textContent = `#${d.token_number}`;
+      document.getElementById("br-name").textContent = d.name;
+      document.getElementById("br-doc").textContent = `Dr. ${d.doctor_name} — ${d.specialization}`;
+      document.getElementById("br-ahead").textContent = d.patients_ahead;
+      document.getElementById("br-wait").textContent = w ? `~${w.estimated_wait_minutes}` : "—";
+      document.getElementById("br-wait-sub").textContent = w ? `min (${w.avg_consultation_minutes} min/pt × ${d.patients_ahead} ahead)` : "minutes";
+      document.getElementById("br-doctor-name").textContent = `Dr. ${d.doctor_name}`;
+      document.getElementById("br-spec").textContent = d.specialization;
+      document.getElementById("br-phone").textContent = d.phone_number || "—";
+      document.getElementById("br-avg").textContent = w ? `${w.avg_consultation_minutes} min / patient` : "—";
+
+      document.getElementById("booking-result").style.display = "block";
+
+      showToast(`✅ Token #${d.token_number} booked!`);
+      // Clear form
+      ["b-name", "b-age", "b-phone", "b-problem"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("b-doctor").value = "";
+    }
+
+    // ── Check Token Status ────────────────────────────────────────
+    async function checkToken() {
+      const token = document.getElementById("token-input").value;
+      const doctorId = document.getElementById("doc-select").value;
+
+      if (!token) { showToast("⚠️ Please enter your token number", "error"); return; }
+      if (!doctorId) { showToast("⚠️ Please select your doctor", "error"); return; }
+
+      const res = await fetch(`${API}/api/patient/token/${token}?doctor_id=${doctorId}`).catch(() => null);
+      if (!res) { showToast("❌ Network error", "error"); return; }
+      const json = await res.json();
+
+      if (!json.success) {
+        showToast(`Token #${token} not found. Please check with the receptionist.`, "error");
+        return;
+      }
+
+      const p = json.data;
+      const w = p.wait_info;
+
+      document.getElementById("r-token").textContent = `#${p.token_number}`;
+      document.getElementById("r-name").textContent = p.name;
+
+      // Live stats
+      document.getElementById("r-ahead-num").textContent = p.patients_ahead;
+      document.getElementById("r-pos-num").textContent = p.queue_position;
+
+      if (p.status === "completed") {
+        document.getElementById("r-wait-num").textContent = "✅";
+        document.getElementById("r-wait-sub").textContent = "Consultation complete";
+      } else if (p.status === "consulting") {
+        document.getElementById("r-wait-num").textContent = "▶";
+        document.getElementById("r-wait-sub").textContent = "Being consulted now";
+      } else {
+        document.getElementById("r-wait-num").textContent = w ? `~${w.estimated_wait_minutes}` : "—";
+        document.getElementById("r-wait-sub").textContent = w ? `min (${w.avg_consultation_minutes} avg × ${w.patients_ahead} ahead)` : "minutes";
+      }
+
+      document.getElementById("r-doctor").textContent = p.doctor_name || "—";
+      document.getElementById("r-spec").textContent = p.specialization || "—";
+      document.getElementById("r-problem").textContent = p.problem || "—";
+
+      const sEl = document.getElementById("r-status");
+      sEl.textContent = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+      sEl.className = `info-val s-${p.status}`;
+
+      // Alert + hospital recs
+      const alertBanner = document.getElementById("alert-banner");
+      const hospitalsSection = document.getElementById("hospitals-section");
+      const hospBody = document.getElementById("hosp-body");
+
+      if (p.alert && p.recommendations?.length > 0) {
+        alertBanner.style.display = "block";
+        hospitalsSection.style.display = "block";
+        hospBody.innerHTML = p.recommendations.map((h, i) => `
+          <tr class="${i === 0 ? 'best-choice' : ''}">
+            <td>${i + 1}</td>
+            <td>${h.name}${i === 0 ? '<span class="best-badge">Best</span>' : ''}</td>
+            <td>${h.location}</td>
+            <td><strong>${h.average_wait_time} min</strong></td>
+          </tr>`).join("");
+      } else {
+        alertBanner.style.display = "none";
+        hospitalsSection.style.display = "none";
+      }
+
+      document.getElementById("check-result").style.display = "block";
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────
+    function showToast(msg, type = "success") {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.background = type === "error" ? "#dc2626" : "#059669";
+      t.style.display = "block";
+      setTimeout(() => t.style.display = "none", 3500);
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    document.addEventListener("DOMContentLoaded", () => {
+      loadDoctors();
+      document.getElementById("token-input").addEventListener("keydown", e => {
+        if (e.key === "Enter") checkToken();
+      });
+    });
+  </script>
+</body>
+
+</html>
