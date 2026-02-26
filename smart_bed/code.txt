@@ -1,1 +1,144 @@
-t
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <HX711.h>
+
+// ================= WIFI =================
+const char* ssid = "ARYP";
+const char* password = "Aryan@123";
+
+// ================= SUPABASE =================
+const char* supabaseUrl = "https://mcyokgoapizystksveye.supabase.co";
+const char* supabaseKey = "sb_publishable_IlZifMlEoBak76-In9xejQ_tZxLyrDt";
+
+// ================= HX711 =================
+#define DT_PIN 32
+#define SCK_PIN 33
+HX711 scale;
+float calibration_factor = 420.0;
+
+// ============== LAST STATUS TRACKER ==============
+String lastStatus = "";  // Tracks previous status to avoid duplicate sends
+
+// ================= SEND FUNCTION =================
+void sendToSupabase(float weightValue, String statusValue) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient https;
+
+  String url = String(supabaseUrl) + "/rest/v1/pesticide_logs";
+
+  if (https.begin(client, url)) {
+    https.addHeader("Content-Type", "application/json");
+    https.addHeader("apikey", supabaseKey);
+    https.addHeader("Authorization", "Bearer " + String(supabaseKey));
+    https.addHeader("Prefer", "return=minimal");
+
+    JsonDocument doc;
+    doc["weight"] = weightValue;
+    doc["status"] = statusValue;
+
+    String body;
+    serializeJson(doc, body);
+
+    int httpResponseCode = https.POST(body);
+    Serial.print("📡 HTTP Response: ");
+    Serial.println(httpResponseCode);
+
+    https.end();
+  } else {
+    Serial.println("❌ Failed to connect to Supabase");
+  }
+}
+
+// ================= WIFI RECONNECT =================
+void ensureWiFiConnected() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("⚠ WiFi lost. Reconnecting...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+      delay(500);
+      Serial.print(".");
+      attempts++;
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("\n✅ WiFi Reconnected!");
+    } else {
+      Serial.println("\n❌ WiFi Reconnect Failed.");
+    }
+  }
+}
+
+// ================= SETUP =================
+void setup() {
+  Serial.begin(115200);
+
+  // WiFi Connect
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ WiFi Connected!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // HX711 Setup
+  scale.begin(DT_PIN, SCK_PIN);
+  scale.set_scale(calibration_factor);
+
+  Serial.println("Stabilizing sensor... please wait.");
+  delay(5000);
+  scale.tare();  // Zero out the scale
+  Serial.println("✅ System Ready! Monitoring bed...");
+  Serial.println("─────────────────────────────────");
+}
+
+// ================= LOOP =================
+void loop() {
+  ensureWiFiConnected();
+
+  if (scale.is_ready()) {
+    float currentWeight = scale.get_units(10);
+
+    // Clamp negative noise to 0
+    if (currentWeight < 0) currentWeight = 0;
+
+    Serial.print("⚖ Weight: ");
+    Serial.print(currentWeight);
+    Serial.println(" g");
+
+    // ===== BED OCCUPIED =====
+    if (currentWeight > 2.0) {
+      if (lastStatus != "occupied") {
+        Serial.println("✅ Status: BED OCCUPIED → Sending to Supabase");
+        sendToSupabase(currentWeight, "occupied");
+        lastStatus = "occupied";
+      } else {
+        Serial.println("✅ Status: BED OCCUPIED (no change, skip send)");
+      }
+    }
+
+    // ===== BED EMPTY =====
+    else {
+      if (lastStatus != "empty") {
+        Serial.println("🔴 Status: BED EMPTY → Sending to Supabase");
+        sendToSupabase(currentWeight, "empty");
+        lastStatus = "empty";
+      } else {
+        Serial.println("🔴 Status: BED EMPTY (no change, skip send)");
+      }
+    }
+
+    Serial.println("─────────────────────────────────");
+    delay(3000);  // Check every 3 seconds
+
+  } else {
+    Serial.println("❌ HX711 not ready. Check wiring.");
+    delay(1000);
+  }
+}
